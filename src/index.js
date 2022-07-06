@@ -48,64 +48,15 @@ async function connect_2_couchbase() {
     console.log(' Openning bucket...');
     var bucket = cluster.bucket(bucketName);
     console.log('  Bucket succesfully opened.');
+    return bucket.scope(scopeName).collection(collectionName)
   } catch (error) {
     console.log('  Could not connect to couchbase. Check your credentials or bucket name.');
   }
-  return bucket.scope(scopeName).collection(collectionName)
 }
 
 async function main() {
   console.log('Live search NodeJS API:')
-  // const collection = connect_2_couchbase();
-  const user = {
-    type: 'user',
-    name: 'Michael',
-    email: 'michael123@test.com',
-    interests: ['Swimming', 'Rowing'],
-  }
-
-  const hits = {
-    "hits": [
-      {
-        "fields": {
-          "FIRST_NAME":"Jhon",
-          "LAST_NAME":"Smith",
-          "EMAIL_ADDRESS":"jhon.smith@test.com",
-          "CNSMR_HOME_PHONE_NBR":"310123456",
-          "CNSMR_ID":"123"
-          ,"CNSMR_GENDER_CODE":"1",
-          "CNSMR_PREFIX_CODE":"3",
-          "CNSMR_MIDDLE_NAME":"Smith",
-          "CNSMR_ADDRESS_NAME":"Street 1",
-          "CNSMR_ADDRESS_CITY_NAME":"NY",
-          "CNSMR_ADDRESS_LINE1":"",
-          "CNSMR_EMAIL_TYPE_CODE":"",
-          "CNSMR_PHONE_ID":"12",
-          "CNSMR_PHONE_NBR":"123564"
-        }
-      },
-      {
-        "fields": {
-          "FIRST_NAME":"Andrew",
-          "LAST_NAME":"Smith",
-          "EMAIL_ADDRESS":"andrew.smith@test.com",
-          "CNSMR_HOME_PHONE_NBR":"310123457",
-          "CNSMR_ID":"124",
-          "CNSMR_GENDER_CODE":"2",
-          "CNSMR_PREFIX_CODE":"3",
-          "CNSMR_MIDDLE_NAME":"",
-          "CNSMR_ADDRESS_NAME":"Street 48",
-          "CNSMR_ADDRESS_CITY_NAME":"NY",
-          "CNSMR_ADDRESS_LINE1":"Av.",
-          "CNSMR_EMAIL_TYPE_CODE":"rt",
-          "CNSMR_PHONE_ID":"13",
-          "CNSMR_PHONE_NBR":"25234"
-        }
-      }
-    ],
-    "total_hits":"2"
-  }
-
+  const collection = connect_2_couchbase();
   var app = express();
   app.use(morgan('dev'));
   app.use(cors());
@@ -117,17 +68,12 @@ async function main() {
     return res.send(index_page);
   });
 
-  app.get('/user', (req, res) => {
-    return res.send(user);
-  });
-
   app.post('/user-detail', async (req, res) => {
-    
     const key = req.body;
     const result = await collection.get(key);
     document = result.value;
-
-    return res.send(hits);
+    console.log(document);
+    return res.send(value.hits);
   });
 
   app.listen(8080, () => {
