@@ -10,7 +10,7 @@ const index_page = `<h1>Live Search API</h1>
 A sample API for getting started with Couchbase Server and the Node.js SDK.`;
 
 const CB = {
-  host: process.env.CB_HOST || 'db',
+  endpoint: process.env.CB_ENDPOINT || 'db',
   username: process.env.CB_USER || 'Administrator',
   password: process.env.CB_PASS || 'password'
 }
@@ -18,24 +18,11 @@ const bucketName = 'ff4jProperties';
 const scopeName = '';
 const collectionName = '';
 
-function web_server() {
-  const hostname = '127.0.0.1';
-  const port = 3000;
-  const server = http.createServer((req, res) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    res.end('Hello World');
-  });
-  server.listen(port, hostname, () => {
-    console.log(`Server is been executed in http://${hostname}:${port}/`);
-  });
-}
-
 async function connect_2_couchbase() {
   try {
     console.log(` Trying to connect to backend Couchbase server ${CB.host}...`)
     var cluster = await couchbase.connect(
-      `couchbase://${CB.host}`,
+      `couchbases://cb.${CB.endpoint}.cloud.couchbase.com`,
       {
         username: CB.username,
         password: CB.password,
@@ -69,15 +56,17 @@ async function main() {
   });
 
   app.post('/user-detail', async (req, res) => {
-    const key = req.body;
-    const result = await collection.get(key);
+    const body = req.body;
+    console.log(body);
+    console.log(body.id);
+    const result = await collection.get(body.id);
     document = result.value;
     console.log(document);
-    return res.send(value.hits);
+    return res.send(document.hits);
   });
 
-  app.listen(8080, () => {
-    console.log(' Listening on port 8080!');
+  app.listen(8091, () => {
+    console.log(' Listening on port 8091!');
   });
 }
 
