@@ -85,7 +85,7 @@ async function connect_2_couchbase() {
     console.log('  Bucket succesfully opened.');
     return bucket.scope(scopeName).collection(collectionName)
   } catch (error) {
-    console.log('  Could not connect to couchbase. Check your credentials or bucket name.');
+    console.log('ERROR: '. error);
   }
 }
 
