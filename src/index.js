@@ -1,13 +1,15 @@
-const http = require('http');
+const https = require('https');
 var couchbase = require('couchbase');
 var express = require('express');
 var morgan = require('morgan');
 var cors = require('cors');
 var swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
+const axios = require('axios');
 
-const index_page = `<h1>Live Search API</h1>
-A sample API for getting started with Couchbase Server and the Node.js SDK.`;
+const url = process.env.DB_URL;
+const user = process.env.DB_USER;
+const password = process.env.DB_PASSWORD;
 
 mockedResult = {
   value: {
@@ -97,10 +99,96 @@ async function main() {
   app.use(cors());
   app.use(express.json());
 
-  app.use('/live', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  if (!url) {
+    console.log("Please define the endpoint URL in enviroment variable name DB_URL.");
+    process.exit();
+  } else {
+    console.log("  Working with endpoint URL:", url);
+  }
+  if (!user) {
+    console.log("Please define the username in enviroment variable name DB_USER.");
+    process.exit();
+  }
+  if (!password) {
+    console.log("Please define the endpoint pasword in enviroment variable name DB_PASSWORD.");
+    process.exit();
+  }
 
-  app.get('/', (req, res) => {
-    return res.send(index_page);
+  app.post('/live-search', async (req, res) => {
+    const reqBody = req.body;
+    console.log(reqBody);
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + btoa(`${user}:${password}`)
+    };
+    const body = {
+      "query" : {
+        "field": reqBody.field,
+        "prefix": reqBody.value
+      },
+      "size": 10,
+      "from": 0,
+      "fields" : ["*"],
+      "explain": false,
+      "highlight": {}
+    };
+    return axios.post(
+      url,
+      { "body": body },
+      {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(`user:password`)
+      },
+    }).then(axRes => {
+      console.log(`statusCode: ${res.status}`);
+      return res.send(axRes.data);
+    })
+    .catch(error => {
+      console.error(error);
+      return res.send(error);
+    });
+  });
+
+
+  app.post('/manual-search', async (req, res) => {
+    const reqBody = req.body;
+    console.log(reqBody);
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + btoa(`user:password`)
+    };
+    const body = {
+      "query" : {
+        "conjuncts": reqBody.fields,
+      },
+      "size": 10,
+      "from": 0,
+      "fields" : ["*"],
+      "explain": false,
+      "highlight": {}
+    };
+    console.log(body);
+    return axios.post(
+      "https://livesearchapi.azure-api.net/api/index/intranet_persistence/query/detail",
+      { "body": body },
+      {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(`user:password`)
+      },
+    }).then(axRes => {
+      console.log(`statusCode: ${res.status}`);
+      return res.send(axRes.data);
+    })
+    .catch(error => {
+      console.error(error);
+      return res.send(error);
+    });
   });
 
   app.post('/user-detail', async (req, res) => {
