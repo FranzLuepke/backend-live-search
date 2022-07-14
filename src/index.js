@@ -1,15 +1,20 @@
 const https = require('https');
-var couchbase = require('couchbase');
 var express = require('express');
 var morgan = require('morgan');
 var cors = require('cors');
-var swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json');
 const axios = require('axios');
-
 const connection = require('./connection');
 
-mockedResult = {
+const url = process.env.DB_URL;
+const user = process.env.DB_USER;
+const password = process.env.DB_PASSWORD;
+const CB = {
+  endpoint: process.env.CB_ENDPOINT || '10.16.6.159',
+  username: process.env.CB_USER || 'user',
+  password: process.env.CB_PASS || 'password'
+};
+const mock = true;
+const mockedResult = {
   value: {
     hits: [
       {
@@ -53,12 +58,7 @@ mockedResult = {
     ],
     total_hits: 2
   }
-}
-
-const bucketName = 'ff4jProperties';
-const scopeName = '';
-const collectionName = '';
-const mock = true;
+};
 
 async function connect_2_couchbase() {
   try {
@@ -67,7 +67,9 @@ async function connect_2_couchbase() {
     const data_bucket = con.bucket('ewaiver');
     const data_scope = data_bucket.scope('_default');
     const data_cluster = con.cluster;
-    const data_collection = data_scope.collection('_defualt');  
+    const data_collection = data_scope.collection('_defualt');
+    console.log(data_cluster);
+    console.log(data_collection);
   } catch (error) {
     console.log('ERROR: ', error);
   }
@@ -81,21 +83,6 @@ async function main() {
   app.use(morgan('dev'));
   app.use(cors());
   app.use(express.json());
-
-  if (!url) {
-    console.log("Please define the endpoint URL in enviroment variable name DB_URL.");
-    process.exit();
-  } else {
-    console.log("  Working with endpoint URL:", url);
-  }
-  if (!user) {
-    console.log("Please define the username in enviroment variable name DB_USER.");
-    process.exit();
-  }
-  if (!password) {
-    console.log("Please define the endpoint pasword in enviroment variable name DB_PASSWORD.");
-    process.exit();
-  }
 
   app.post('/live-search', async (req, res) => {
     const reqBody = req.body;
@@ -120,11 +107,7 @@ async function main() {
       url,
       { "body": body },
       {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-        'Authorization': 'Basic ' + btoa(`user:password`)
-      },
+      headers,
     }).then(axRes => {
       console.log(`statusCode: ${res.status}`);
       return res.send(axRes.data);
@@ -178,7 +161,13 @@ async function main() {
     const body = req.body;
     const key = 'new';
     const document = body.document;
-    const result = await collection.insert(key, document);
+    try {
+      const result = await collection.insert(key, document);
+      console.log(result);
+    } catch (error) {
+      console.log('Could not insert document to collection.');
+      console.log('ERROR:', error);
+    }
   });
 
   app.post('/user-detail', async (req, res) => {
@@ -189,8 +178,14 @@ async function main() {
     if(mock === true) {
       result = mockedResult;
     } else {
+      try {
       // result = await collection.get(body.id);
       result = await collection.get('ARG_CONS_DATA:172382');
+      } catch (error) {
+        console.log('Could not get document in collection.');
+        console.log('ERROR:', error);
+      }
+      
     }
     document = result.value;
     console.log(document);

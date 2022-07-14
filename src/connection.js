@@ -22,14 +22,33 @@ module.exports.defaultCollection = defaultCollection;
 
 async function getCluster() {
 
-  const cluster = await couchbase.connect(`couchbase://${CB.endpoint}`, { username: CB.username, password: CB.password }, (err, cluster) => {
-    console.log('GET CLUSTER');
-    console.log("cluster: " + cluster);
-    bucket = cluster.bucket('ewaiver');
-    defautScope = bucket.scope('_default');
-    defaultCollection = bucket.collection('_default');
-    console.log('CLUSTER BUCKET:', bucket)
-    console.log("Connected successfully")
-  });
-  return cluster;
+  if (!url) {
+    console.log("Please define the endpoint URL in enviroment variable name DB_URL.");
+    process.exit();
+  } else {
+    console.log("  Working with endpoint URL:", url);
+  }
+  if (!user) {
+    console.log("Please define the username in enviroment variable name DB_USER.");
+    process.exit();
+  }
+  if (!password) {
+    console.log("Please define the endpoint pasword in enviroment variable name DB_PASSWORD.");
+    process.exit();
+  }
+
+  try {
+    const cluster = await couchbase.connect(`couchbase://${CB.endpoint}`, { username: CB.username, password: CB.password }, (err, cluster) => {
+      console.log('GET CLUSTER');
+      console.log("cluster: " + cluster);
+      bucket = cluster.bucket('ewaiver');
+      defautScope = bucket.scope('_default');
+      defaultCollection = bucket.collection('_default');
+      console.log('CLUSTER BUCKET:', bucket)
+      console.log("Connected successfully")
+    });
+    return cluster;
+  } catch (error) {
+    console.log(error);
+  }
 }
