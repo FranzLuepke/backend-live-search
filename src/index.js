@@ -7,9 +7,7 @@ var swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
 const axios = require('axios');
 
-const url = process.env.DB_URL;
-const user = process.env.DB_USER;
-const password = process.env.DB_PASSWORD;
+const connection = require('./connection');
 
 mockedResult = {
   value: {
@@ -17,7 +15,7 @@ mockedResult = {
       {
         id: "user1",
         fields: {
-          FIRST_NAME: "Jhon",
+          FIRST_NAME: "Jhon2",
           LAST_NAME: "Smith",
           EMAIL_ADDRESS: "jhon.smith@test.com",
           CNSMR_HOME_PHONE_NBR: "310123456",
@@ -57,11 +55,6 @@ mockedResult = {
   }
 }
 
-const CB = {
-  endpoint: process.env.CB_ENDPOINT || 'db',
-  username: process.env.CB_USER || 'Administrator',
-  password: process.env.CB_PASS || 'password'
-}
 const bucketName = 'ff4jProperties';
 const scopeName = '';
 const collectionName = '';
@@ -69,31 +62,21 @@ const mock = true;
 
 async function connect_2_couchbase() {
   try {
-    console.log(` Trying to connect to backend Couchbase server ${CB.host}...`)
-    var cluster = await couchbase.connect(
-      `couchbases://cb.${CB.endpoint}.cloud.couchbase.com`,
-      {
-        username: CB.username,
-        password: CB.password,
-        timeouts: {
-          kvTimeout: 10000,
-        },
-      }
-    );
-    console.log('  Connected succesfully to Couchbase host!');
-    console.log(' Openning bucket...');
-    var bucket = cluster.bucket(bucketName);
-    mock = false;
-    console.log('  Bucket succesfully opened.');
-    return bucket.scope(scopeName).collection(collectionName)
+    console.log(` Trying to connect to backend Couchbase server..`)
+    const con = await connection.getCluster();
+    const data_bucket = con.bucket('ewaiver');
+    const data_scope = data_bucket.scope('_default');
+    const data_cluster = con.cluster;
+    const data_collection = data_scope.collection('_defualt');  
   } catch (error) {
-    console.log('ERROR: '. error);
+    console.log('ERROR: ', error);
   }
 }
 
 async function main() {
   console.log('Live search NodeJS API:')
   const collection = connect_2_couchbase();
+  
   var app = express();
   app.use(morgan('dev'));
   app.use(cors());
@@ -191,6 +174,13 @@ async function main() {
     });
   });
 
+  app.post('/update', async (req, res) => {
+    const body = req.body;
+    const key = 'new';
+    const document = body.document;
+    const result = await collection.insert(key, document);
+  });
+
   app.post('/user-detail', async (req, res) => {
     const body = req.body;
     console.log(body);
@@ -199,7 +189,8 @@ async function main() {
     if(mock === true) {
       result = mockedResult;
     } else {
-      result = await collection.get(body.id);
+      // result = await collection.get(body.id);
+      result = await collection.get('ARG_CONS_DATA:172382');
     }
     document = result.value;
     console.log(document);
