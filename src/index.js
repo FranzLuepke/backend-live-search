@@ -159,11 +159,16 @@ async function main() {
 
   app.post('/update', async (req, res) => {
     const body = req.body;
-    const key = 'new';
+    const key = `${body.documentType}:${body.consumerId}`;
     const document = body.document;
     try {
-      const result = await collection.insert(key, document);
+      const searched = await collection.get(key);
+      searched['LOYALTY_TIER'] = document.loyaltyTier;
+      searched['LOYALTY_POINTS'] = document.loyaltyPoints;
+      searched['CLOSE_TO_TIER'] = document.closeToTier;
+      const result = await collection.insert(key, searched);
       console.log(result);
+      return res.send(searched);
     } catch (error) {
       console.log('Could not insert document to collection.');
       console.log('ERROR:', error);
@@ -179,8 +184,8 @@ async function main() {
       result = mockedResult;
     } else {
       try {
-      // result = await collection.get(body.id);
-      result = await collection.get('ARG_CONS_DATA:172382');
+        // result = await collection.get(body.id);
+        result = await collection.get('ARG_CONS_DATA:172382');
       } catch (error) {
         console.log('Could not get document in collection.');
         console.log('ERROR:', error);
